@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     # Google OAuth - Managed by Supabase
     google_client_id: str | None = None
     google_client_secret: str | None = None
+    
+    # OAuth Configuration
+    oauth_redirect_uri: str = "https://zqurkolbiilsuqudcyud.supabase.co/auth/v1/callback"
+    oauth_state_secret: str = "uEK4I9iIlEQHOlMw0RTw-Pu9Ousrriqdi-AXYkwXsaw"
+    google_oauth_scopes: str = "https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/calendar.events"
 
     # Supabase
     supabase_url: str | None = None

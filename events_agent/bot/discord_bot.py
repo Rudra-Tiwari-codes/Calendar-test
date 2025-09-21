@@ -48,26 +48,11 @@ def build_bot() -> DiscordClient:
 
     @client.tree.command(name="connect", description="Link your Google Calendar account")
     async def connect_command(interaction: discord.Interaction) -> None:
-        user_id = interaction.user.id
+        user_id = str(interaction.user.id)
         
-        # For Supabase OAuth, we need to use a publicly accessible callback URL
-        # Since we're running locally, we'll use a different approach:
-        # 1. Use Supabase's built-in redirect handling
-        # 2. Include discord_user in the state parameter for tracking
-        
-        # Create state parameter with Discord user ID
-        import secrets
-        state = f"discord_user={user_id}&nonce={secrets.token_urlsafe(16)}"
-        
-        # Pure Supabase OAuth URL with state tracking
-        supabase_base = settings.supabase_url
-        from urllib.parse import urlencode
-        params = {
-            'provider': 'google',
-            'state': state,
-            'redirect_to': f'http://localhost:8000/oauth/supabase-success'
-        }
-        url = f"{supabase_base}/auth/v1/authorize?{urlencode(params)}"
+        # Use our Supabase OAuth handler to generate the OAuth URL
+        from events_agent.app.oauth import oauth_handler
+        url = oauth_handler.build_supabase_oauth_url(user_id)
         
         embed = discord.Embed(
             title="🔗 Connect Google Calendar",
@@ -78,6 +63,7 @@ def build_bot() -> DiscordClient:
         embed.add_field(name="Note", value="This will open in your browser. After connecting, you can use all calendar commands!", inline=False)
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
+        logger.info("connect_link_sent", interaction_id=str(interaction.id))
         logger.info("connect_link_sent", interaction_id=str(interaction.id))
 
     @client.tree.command(name="addevent", description="Create a calendar event")
