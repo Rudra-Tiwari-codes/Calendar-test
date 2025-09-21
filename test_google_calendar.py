@@ -43,10 +43,10 @@ async def test_google_calendar_api():
     print("\n🔍 Testing OAuth Configuration...")
     print(f"   Client ID: {settings.google_client_id}")
     print(f"   Client Secret: {'*' * 20}")
-    print(f"   Redirect URI: {settings.oauth_redirect_uri}")
+    print(f"   Supabase URL: {settings.supabase_url}")
     
-    if settings.google_client_id and settings.google_client_secret:
-        print("✅ OAuth settings configured")
+    if settings.google_client_id and settings.google_client_secret and settings.supabase_url:
+        print("✅ OAuth settings configured for Supabase")
     else:
         print("❌ OAuth settings missing")
         return False
@@ -116,7 +116,7 @@ async def main():
     print(f"\n📁 Database will store data in: {os.path.abspath('events_agent.db')}")
     print("💡 Events created via Discord will appear in both:")
     print("   - Your Google Calendar (via API)")
-    print("   - Local SQLite database (for reminders and tracking)")
+    print("   - Supabase PostgreSQL database (for reminders and tracking)")
 
 
 if __name__ == "__main__":

@@ -37,31 +37,29 @@ def _consume_state(state: str) -> str:
 
 @router.get("/oauth/start")
 async def oauth_start(discord_id: str = Query(...)) -> JSONResponse:
-    if not settings.google_client_id or not settings.oauth_redirect_uri:
-        raise HTTPException(status_code=500, detail="oauth_not_configured")
-    state = _make_state(discord_id)
-    params = {
-        "response_type": "code",
-        "client_id": settings.google_client_id,
-        "redirect_uri": settings.oauth_redirect_uri,
-        "scope": "openid email https://www.googleapis.com/auth/calendar",
-        "access_type": "offline",
-        "prompt": "consent",
-        "state": state,
-    }
+    """Legacy OAuth endpoint - redirects to Supabase OAuth"""
+    if not settings.supabase_url:
+        raise HTTPException(status_code=500, detail="supabase_not_configured")
+    
+    # Create state parameter with Discord user ID
+    import secrets
+    state = f"discord_user={discord_id}&nonce={secrets.token_urlsafe(16)}"
+    
+    # Direct to Supabase OAuth
     from urllib.parse import urlencode
-
-    url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+    params = {
+        'provider': 'google',
+        'state': state,
+        'redirect_to': f'http://localhost:8000/oauth/supabase-success'
+    }
+    url = f"{settings.supabase_url}/auth/v1/authorize?{urlencode(params)}"
     return JSONResponse({"url": url, "state": state})
 
 
 @router.get("/oauth/callback")
 async def oauth_callback(code: str, state: str) -> JSONResponse:
-    discord_id = _consume_state(state)
-    # Placeholder: store encrypted code as a stand-in for tokens.
-    ciphertext = encrypt_text(code)
-    logger.info("oauth_linked", discord_id=discord_id)
-    return JSONResponse({"ok": True})
+    """Legacy callback - redirects to Supabase success handler"""
+    return JSONResponse({"message": "Please use Supabase OAuth flow instead", "redirect": "/oauth/supabase-success"})
 
 
 @router.get("/oauth/supabase-success", response_model=None)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Complete Calendar Agent Discord Bot
-Integrates Discord with Google Calendar API and SQLite database
+Integrates Discord with Google Calendar API and Supabase PostgreSQL database
 """
 
 import asyncio

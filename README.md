@@ -1,17 +1,17 @@
 # Calendar Agent
 
-A comprehensive Discord bot that integrates with Google Calendar for seamless event management. Built with FastAPI, SQLAlchemy, and modern async Python for production-grade performance.
+A comprehensive Discord bot that integrates with Google Calendar for seamless event management. Built with FastAPI, SQLAlchemy, and modern async Python for production deployment.
 
 ## Features
 
 - **Discord Integration**: Native Discord slash commands for calendar management
-- **Google Calendar Sync**: Full OAuth2 integration with Google Calendar API
+- **Google Calendar Sync**: Full OAuth2 integration via Supabase Auth
 - **Smart Reminders**: Automated event reminders with configurable timing
 - **Timezone Support**: Multi-timezone awareness with user-specific settings
 - **Natural Language**: Parse natural language date and time expressions
 - **Security**: Encrypted token storage and secure OAuth flow
 - **Monitoring**: Built-in Prometheus metrics and health checks
-- **Production Ready**: Async architecture with comprehensive error handling and logging
+- **Production Ready**: Async architecture with Supabase PostgreSQL database
 
 ## Quick Start
 
@@ -20,7 +20,7 @@ A comprehensive Discord bot that integrates with Google Calendar for seamless ev
 - Python 3.12+
 - Discord Bot Token
 - Google Cloud Project with Calendar API enabled
-- Supabase account (or SQLite for development)
+- Supabase account with PostgreSQL database
 
 ### Installation
 
@@ -37,16 +37,26 @@ A comprehensive Discord bot that integrates with Google Calendar for seamless ev
    # Discord Configuration
    DISCORD_TOKEN=your_discord_bot_token_here
    
-   # Database Configuration
-   # For Supabase (production):
-   DATABASE_URL=postgresql+asyncpg://postgres:[YOUR_PASSWORD]@db.[YOUR_PROJECT_ID].supabase.co:6543/postgres
-   # For SQLite (development):
-   # DATABASE_URL=sqlite+aiosqlite:///./events_agent.db
+   # Database Configuration - Production Supabase PostgreSQL
+   DATABASE_URL=postgresql+asyncpg://postgres.[YOUR_PROJECT_ID]:[YOUR_PASSWORD]@aws-0-us-west-1.pooler.supabase.com:6543/postgres
+   
+   # Supabase Configuration
+   SUPABASE_URL=https://[YOUR_PROJECT_ID].supabase.co
+   SUPABASE_KEY=[YOUR_SUPABASE_ANON_KEY]
    
    # Application Settings
    DEFAULT_TZ=Australia/Melbourne
    HTTP_HOST=0.0.0.0
    HTTP_PORT=8000
+   
+   # Security
+   FERNET_KEY=[GENERATE_USING_cryptography.fernet.Fernet.generate_key()]
+   
+   # Google OAuth Configuration - Managed by Supabase
+   GOOGLE_CLIENT_ID=your_google_client_id
+   GOOGLE_CLIENT_SECRET=your_google_client_secret
+   SUPABASE_AUTH_URL=https://[YOUR_PROJECT_ID].supabase.co/auth/v1/callback
+   ```
    
    # Security
    FERNET_KEY=your_base64_32byte_encryption_key

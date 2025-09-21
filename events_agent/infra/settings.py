@@ -14,16 +14,15 @@ class Settings(BaseSettings):
     # Discord
     discord_token: str | None = None
 
-    # Database
-    database_url: str = "sqlite+aiosqlite:///./events_agent.db"
+    # Database - Production Supabase PostgreSQL
+    database_url: str = "postgresql+asyncpg://postgres:DSCubedAIAgent@db.zqurkolbiilsuqudcyud.supabase.co:5432/postgres"
 
     # Security
     fernet_key: str | None = None
 
-    # Google OAuth
+    # Google OAuth - Managed by Supabase
     google_client_id: str | None = None
     google_client_secret: str | None = None
-    oauth_redirect_uri: str | None = None
 
     # Supabase
     supabase_url: str | None = None

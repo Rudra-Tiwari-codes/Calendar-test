@@ -18,14 +18,14 @@ async def main_async() -> None:
     logger = get_logger()
     logger.info("starting_calendar_agent")
 
-    # Use pure Supabase REST API (no PostgreSQL connection needed)
-    logger.info("initializing_supabase_rest_api")
+    # Initialize Supabase for production database
+    logger.info("initializing_supabase_production_db")
     try:
         from .infra.supabase_db import get_supabase_db
         get_supabase_db()
-        logger.info("supabase_rest_api_initialized")
+        logger.info("supabase_production_db_initialized")
     except Exception as e:
-        logger.error("supabase_rest_api_failed", error=str(e))
+        logger.error("supabase_production_db_failed", error=str(e))
         raise
 
     # Create FastAPI app
