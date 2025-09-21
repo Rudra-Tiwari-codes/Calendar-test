@@ -48,7 +48,7 @@ async def oauth_success(request: Request):
     state = query_params.get('state')
     
     # Check for tokens in query parameters (after JavaScript redirect)
-    access_token = query_params.get('access_token')
+    access_token = query_params.get('access_token')  # This will be the Google provider_token
     refresh_token = query_params.get('refresh_token')
     
     logger.info("supabase_oauth_callback", user_id=user_id, has_state=bool(state), has_access_token=bool(access_token))
@@ -130,29 +130,49 @@ async def oauth_success(request: Request):
                 }}
                 
                 // Extract tokens from URL fragment if present
-                if (window.location.hash && window.location.hash.includes('access_token')) {{
-                    console.log('Found tokens in fragment, extracting...');
-                    const fragmentParams = new URLSearchParams(window.location.hash.substring(1));
-                    const accessToken = fragmentParams.get('access_token');
-                    const refreshToken = fragmentParams.get('refresh_token');
+                if (window.location.hash && window.location.hash.length > 1) {{
+                    console.log('Found hash fragment, checking for provider_token...');
                     
-                    if (accessToken) {{
-                        console.log('Redirecting with tokens...');
-                        // Redirect to self with tokens in query params
+                    // Get the hash without the #
+                    const hashString = window.location.hash.substring(1);
+                    console.log('Hash string:', hashString);
+                    
+                    // Look for provider_token directly in the string
+                    const providerTokenMatch = hashString.match(/provider_token=([^&]+)/);
+                    const refreshTokenMatch = hashString.match(/refresh_token=([^&]+)/);
+                    
+                    if (providerTokenMatch) {{
+                        // Decode in case values are URL-encoded
+                        const providerToken = decodeURIComponent(providerTokenMatch[1]);
+                        const refreshToken = refreshTokenMatch ? decodeURIComponent(refreshTokenMatch[1]) : null;
+                        
+                        console.log('Found provider_token:', providerToken.substring(0, 20) + '...');
+                        console.log('Found refresh_token:', refreshToken);
+                        
+                        // Update status while redirecting for storage
+                        const statusEl = document.getElementById('status');
+                        if (statusEl) {{
+                            statusEl.innerHTML = '📦 Storing tokens...';
+                        }}
+
+                        // Redirect to self with Google tokens in query params
                         const newUrl = new URL(window.location);
-                        newUrl.searchParams.set('access_token', accessToken);
+                        newUrl.searchParams.set('access_token', providerToken);
                         if (refreshToken) {{
                             newUrl.searchParams.set('refresh_token', refreshToken);
                         }}
                         newUrl.hash = '';
+                        console.log('Redirecting to:', newUrl.href);
                         window.location.replace(newUrl.href);
                         return;
+                    }} else {{
+                        console.log('No provider_token found in hash');
                     }}
                 }}
                 
-                // If no tokens found, just close after delay
+                // If no provider_token found, show error after delay
                 setTimeout(() => {{
-                    document.getElementById('status').innerHTML = '⚠️ No tokens found in URL';
+                    document.getElementById('status').innerHTML = '⚠️ No Google OAuth token found in URL';
                     setTimeout(() => window.close(), 2000);
                 }}, 2000);
             </script>
