@@ -7,8 +7,16 @@ from .settings import settings
 
 def get_fernet() -> Fernet:
     if not settings.fernet_key:
-        raise RuntimeError("FERNET_KEY not configured")
-    return Fernet(settings.fernet_key)
+        raise RuntimeError("FERNET_KEY not configured in environment variables")
+    
+    try:
+        # Ensure the key is properly formatted as bytes
+        key = settings.fernet_key
+        if isinstance(key, str):
+            key = key.encode('utf-8')
+        return Fernet(key)
+    except Exception as e:
+        raise RuntimeError(f"Invalid FERNET_KEY format: {e}. Key must be 32 url-safe base64-encoded bytes.")
 
 
 def encrypt_text(plaintext: str) -> str:

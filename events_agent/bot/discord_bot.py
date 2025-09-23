@@ -11,12 +11,8 @@ from discord import app_commands
 from ..infra.logging import get_logger
 from ..infra.settings import settings
 from ..infra.date_parsing import parse_natural_range, parse_natural_datetime, extract_event_details
-from ..infra.db import session_scope
-from ..infra.repo import get_user_token_by_discord_id
-from ..infra.event_repository import EventRepository, UserRepository, ReminderRepository
-from ..services.calendar_service import GoogleCalendarService
-from ..domain.models import User, Event, Reminder
-from sqlalchemy import select, update, insert
+from ..services.calendar_service_simple import GoogleCalendarService
+from ..app.oauth import oauth_handler
 from ..infra.metrics import events_created_total
 from ..infra.rate_limit import check_rate_limit
 
@@ -50,9 +46,9 @@ def build_bot() -> DiscordClient:
     async def connect_command(interaction: discord.Interaction) -> None:
         user_id = str(interaction.user.id)
         
-        # Use our Supabase OAuth handler to generate the OAuth URL
-        from events_agent.app.oauth import oauth_handler
-        url = oauth_handler.build_supabase_oauth_url(user_id)
+        # Use the new client-side OAuth endpoint
+        from events_agent.infra.settings import settings
+        url = f"{settings.base_url}/connect/{user_id}"
         
         embed = discord.Embed(
             title="🔗 Connect Google Calendar",
@@ -60,11 +56,10 @@ def build_bot() -> DiscordClient:
             color=0x00ff00
         )
         embed.add_field(name="Connection Link", value=f"[Connect Now]({url})", inline=False)
-        embed.add_field(name="Note", value="This will open in your browser. After connecting, you can use all calendar commands!", inline=False)
+        embed.add_field(name="Note", value="This will open in your browser and use Supabase OAuth for secure authentication.", inline=False)
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
-        logger.info("connect_link_sent", interaction_id=str(interaction.id))
-        logger.info("connect_link_sent", interaction_id=str(interaction.id))
+        logger.info("connect_link_sent", interaction_id=str(interaction.id), url=url)
 
     @client.tree.command(name="addevent", description="Create a calendar event")
     async def addevent_command(

@@ -9,22 +9,29 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from tenacity import retry, stop_after_attempt, wait_exponential_jitter, retry_if_exception_type
+from supabase import create_client
 
 from ..infra.logging import get_logger
-from ..infra.crypto import encrypt_token, decrypt_token
-from ..infra.event_repository import EventRepository, UserRepository, ReminderRepository
-from ..domain.models import User, Event
+from ..infra.crypto import decrypt_token
+from ..infra.settings import settings
 
 logger = get_logger().bind(service="calendar_service")
 
 
 class GoogleCalendarService:
-    """Service for managing Google Calendar operations."""
+    """Service for managing Google Calendar operations using pure Supabase."""
     
-    def __init__(self, user_repo: UserRepository, event_repo: EventRepository, reminder_repo: ReminderRepository):
-        self.user_repo = user_repo
-        self.event_repo = event_repo
-        self.reminder_repo = reminder_repo
+    def __init__(self):
+        """Initialize service with Supabase client."""
+        if not settings.supabase_url:
+            raise ValueError("Supabase URL must be configured")
+            
+        # Use service role key for backend operations
+        supabase_key = settings.supabase_service_role_key or settings.supabase_key
+        if not supabase_key:
+            raise ValueError("Supabase key must be configured")
+            
+        self.supabase = create_client(settings.supabase_url, supabase_key)
     
     def _build_client(self, token: Dict[str, Any]) -> Any:
         """Build Google Calendar API client from token."""
@@ -33,12 +40,11 @@ class GoogleCalendarService:
                 token=token.get("access_token"),
                 refresh_token=token.get("refresh_token"),
                 token_uri="https://oauth2.googleapis.com/token",
-                client_id=token.get("client_id"),
-                client_secret=token.get("client_secret"),
+                client_id=settings.google_client_id,
+                client_secret=settings.google_client_secret,
                 scopes=[
-                    "openid",
-                    "email",
                     "https://www.googleapis.com/auth/calendar",
+                    "https://www.googleapis.com/auth/calendar.events",
                 ],
             )
             return build("calendar", "v3", credentials=creds, cache_discovery=False)
@@ -405,32 +411,32 @@ class GoogleCalendarService:
         
         return suggestions[:10]  # Return top 10 suggestions
     
-    async def _get_user_with_token(self, discord_user_id: str) -> Optional[User]:
-        """Get user with valid token."""
+    async def _get_user_with_token(self, discord_user_id: str) -> Optional[Dict[str, Any]]:
+        """Get user with valid token using Supabase."""
         try:
-            user = await self.user_repo.get_user_by_discord_id(discord_user_id)
-            if user and user.token_ciphertext:
-                return user
+            result = self.supabase.table("users").select("*").eq("discord_id", discord_user_id).execute()
+            
+            if result.data and result.data[0].get("token_ciphertext"):
+                return result.data[0]
             return None
         except Exception as e:
             logger.error("get_user_with_token_failed", error=str(e))
             return None
     
-    async def _get_valid_token(self, user: User) -> Dict[str, Any]:
+    async def _get_valid_token(self, user_data: Dict[str, Any]) -> Dict[str, Any]:
         """Get and validate user's Google token."""
         try:
-            if not user.token_ciphertext:
+            token_ciphertext = user_data.get("token_ciphertext")
+            if not token_ciphertext:
                 raise ValueError("No token found for user")
             
             # Decrypt token
-            token_data = decrypt_token(user.token_ciphertext)
+            token_data = decrypt_token(token_ciphertext)
             token = json.loads(token_data)
             
             # Validate token has required fields
-            required_fields = ["access_token", "refresh_token", "client_id", "client_secret"]
-            for field in required_fields:
-                if field not in token:
-                    raise ValueError(f"Missing required token field: {field}")
+            if "access_token" not in token:
+                raise ValueError("Missing access_token in token")
             
             return token
             

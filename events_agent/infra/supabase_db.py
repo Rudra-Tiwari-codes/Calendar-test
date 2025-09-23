@@ -16,11 +16,17 @@ class SupabaseDB:
     """Supabase REST API database interface"""
     
     def __init__(self):
-        if not settings.supabase_url or not settings.supabase_key:
-            raise ValueError("Supabase URL and key must be configured")
+        if not settings.supabase_url:
+            raise ValueError("Supabase URL must be configured")
         
-        self.client: Client = create_client(settings.supabase_url, settings.supabase_key)
-        logger.info("supabase_client_initialized")
+        # Use service role key for backend operations (can bypass RLS), fallback to anon key
+        supabase_key = settings.supabase_service_role_key or settings.supabase_key
+        if not supabase_key:
+            raise ValueError("Neither service role key nor anon key configured")
+        
+        self.client: Client = create_client(settings.supabase_url, supabase_key)
+        logger.info("supabase_client_initialized", 
+                   key_type="service_role" if settings.supabase_service_role_key else "anon")
     
     async def create_user(self, discord_id: str, google_tokens: Dict[str, Any]) -> bool:
         """Create or update a user with Google tokens"""

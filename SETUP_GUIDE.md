@@ -43,7 +43,7 @@ python quick_test.py
 
 ### Step 5: Run the Bot
 ```bash
-python run_bot.py
+python -m events_agent.main
 ```
 
 ## Getting Your Supabase Credentials

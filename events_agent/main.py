@@ -4,7 +4,7 @@ import asyncio
 import uvicorn
 
 from .app.http import create_app
-from .bot.discord_bot import run_discord_bot, build_bot
+from .bot.discord_bot_simple import build_bot
 from .infra.logging import configure_logging, get_logger
 from .infra.settings import settings
 from .infra.scheduler import start_scheduler, set_reminder_service

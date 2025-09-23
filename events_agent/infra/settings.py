@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     http_host: str = "0.0.0.0"
     http_port: int = 8000
     default_tz: str = "Australia/Melbourne"
+    
+    # Environment
+    environment: str = "development"  # "development" or "production"
 
     # Discord
     discord_token: str | None = None
@@ -30,10 +33,19 @@ class Settings(BaseSettings):
 
     # Supabase
     supabase_url: str | None = None
-    supabase_key: str | None = None
+    supabase_key: str | None = None  # Anonymous key for client-side operations
+    supabase_service_role_key: str | None = None  # Service role key for backend operations
 
     # Logging
     log_level: str = "INFO"
+    
+    @property
+    def base_url(self) -> str:
+        """Get the base URL for OAuth redirects based on environment"""
+        if self.environment == "production":
+            return "https://your-domain.com"  # Update this for production
+        else:
+            return f"http://localhost:{self.http_port}"
 
 
 settings = Settings()
