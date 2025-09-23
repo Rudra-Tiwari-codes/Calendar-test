@@ -2,6 +2,8 @@
 
 A comprehensive Discord bot that integrates with Google Calendar for seamless event management. Built with FastAPI, SQLAlchemy, and modern async Python for production deployment.
 
+<!-- Updated: 2025-09-24 - Fixed timezone handling -->
+
 ## Features
 
 - **Discord Integration**: Native Discord slash commands for calendar management
