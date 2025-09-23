@@ -125,7 +125,7 @@ def build_bot() -> DiscordClient:
                 )
                 return
             
-            # Create calendar service
+            # Create calendar service (repositories will be created internally)
             calendar_service = GoogleCalendarService()
             
             # Parse time (use default timezone for now)

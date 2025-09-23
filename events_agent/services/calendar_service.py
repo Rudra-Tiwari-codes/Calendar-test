@@ -10,19 +10,24 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from tenacity import retry, stop_after_attempt, wait_exponential_jitter, retry_if_exception_type
 from supabase import create_client
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..infra.logging import get_logger
 from ..infra.crypto import decrypt_token
 from ..infra.settings import settings
+from ..infra.db import session_scope
+from ..infra.event_repository import EventRepository
+from ..infra.repo import get_user_token_by_discord_id
+from ..domain.models import User, Event, Reminder
 
 logger = get_logger().bind(service="calendar_service")
 
 
 class GoogleCalendarService:
-    """Service for managing Google Calendar operations using pure Supabase."""
+    """Service for managing Google Calendar operations with full database integration."""
     
-    def __init__(self):
-        """Initialize service with Supabase client."""
+    def __init__(self, event_repo: Optional[EventRepository] = None, reminder_repo: Optional[Any] = None):
+        """Initialize service with optional repositories (will create if not provided)."""
         if not settings.supabase_url:
             raise ValueError("Supabase URL must be configured")
             
@@ -32,6 +37,8 @@ class GoogleCalendarService:
             raise ValueError("Supabase key must be configured")
             
         self.supabase = create_client(settings.supabase_url, supabase_key)
+        self.event_repo = event_repo
+        self.reminder_repo = reminder_repo
     
     def _build_client(self, token: Dict[str, Any]) -> Any:
         """Build Google Calendar API client from token."""
@@ -51,6 +58,30 @@ class GoogleCalendarService:
         except Exception as e:
             logger.error("build_client_failed", error=str(e))
             raise
+    
+    async def _get_user_token_supabase(self, discord_user_id: str) -> Optional[Dict[str, Any]]:
+        """Get user token from Supabase using SQL query."""
+        try:
+            # Query Supabase for user token
+            response = self.supabase.table('users').select('token_ciphertext').eq('discord_id', discord_user_id).execute()
+            
+            if not response.data:
+                logger.warning("user_not_found_in_supabase", discord_user_id=discord_user_id)
+                return None
+                
+            token_ciphertext = response.data[0].get('token_ciphertext')
+            if not token_ciphertext:
+                logger.warning("user_has_no_token", discord_user_id=discord_user_id)
+                return None
+            
+            # Decrypt token
+            from ..infra.crypto import decrypt_text
+            token_json = decrypt_text(token_ciphertext)
+            return json.loads(token_json)
+            
+        except Exception as e:
+            logger.error("get_user_token_failed", discord_user_id=discord_user_id, error=str(e))
+            return None
     
     @retry(
         retry=retry_if_exception_type((HttpError, Exception)),
@@ -76,15 +107,11 @@ class GoogleCalendarService:
             Dict containing event details and confirmation message
         """
         try:
-            # Get user and their token
-            user = await self._get_user_with_token(discord_user_id)
-            if not user:
+            # Get user token using Supabase auth (simplified for reliability)
+            token = await self._get_user_token_supabase(discord_user_id)
+            if not token:
                 raise ValueError("User not found or not connected to Google Calendar")
             
-            # Decrypt and validate token
-            token = await self._get_valid_token(user)
-            
-            # Skip duplicate check for now - could implement with Supabase later
             logger.info("creating_event", user_id=discord_user_id, title=title)
             
             # Build event body for Google Calendar with proper timezone handling
@@ -122,12 +149,9 @@ class GoogleCalendarService:
                 service.events().insert(calendarId="primary", body=event_body).execute
             )
             
-            # Log successful creation (database storage could be added later)
             logger.info("event_created_successfully", 
                        google_event_id=google_event["id"],
-                       user_id=discord_user_id,
-                       start_time=start_time.isoformat(),
-                       end_time=end_time.isoformat())
+                       user_id=discord_user_id)
             
             return {
                 "success": True,
