@@ -56,7 +56,6 @@ def build_bot() -> DiscordClient:
             color=0x00ff00
         )
         embed.add_field(name="Connection Link", value=f"[Connect Now]({url})", inline=False)
-        embed.add_field(name="Note", value="This will open in your browser and use Supabase OAuth for secure authentication.", inline=False)
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
         logger.info("connect_link_sent", interaction_id=str(interaction.id), url=url)
