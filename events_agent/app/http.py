@@ -5,13 +5,22 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from starlette.responses import JSONResponse, Response
 
 from ..infra.db import db_ping
-from .oauth import router as oauth_router
 from ..infra.logging import get_logger
 from ..infra.metrics import registry
 import structlog
 
 
 logger = get_logger().bind(service="http")
+
+
+# Try to import OAuth router, but don't fail if it's not available
+try:
+    from .oauth import router as oauth_router
+    oauth_available = True
+except Exception as e:
+    logger.warning("oauth_router_unavailable", error=str(e))
+    oauth_router = None
+    oauth_available = False
 
 
 # metrics provided by infra.metrics
@@ -32,11 +41,16 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     async def root() -> JSONResponse:
+        endpoints = ["/healthz", "/readyz", "/metrics"]
+        if oauth_available:
+            endpoints.append("/connect/{user_id}")
+        
         return JSONResponse({
             "service": "Calendar Agent", 
             "status": "running",
             "version": "1.0.0",
-            "endpoints": ["/healthz", "/readyz", "/metrics", "/connect/{user_id}"]
+            "oauth_available": oauth_available,
+            "endpoints": endpoints
         })
 
     @app.get("/healthz")
@@ -62,7 +76,12 @@ def create_app() -> FastAPI:
         content = generate_latest(registry)
         return Response(content=content, media_type=CONTENT_TYPE_LATEST)
 
-    app.include_router(oauth_router)
+    # Include OAuth router only if available
+    if oauth_available and oauth_router:
+        app.include_router(oauth_router)
+        logger.info("oauth_router_included")
+    else:
+        logger.warning("oauth_router_not_included")
 
     return app
 

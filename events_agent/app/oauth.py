@@ -16,12 +16,16 @@ router = APIRouter()
 class OAuthHandler:
     def __init__(self):
         self.state_secret = settings.oauth_state_secret
+        self._supabase = None
         
-        # Initialize Supabase client with error handling
-        if not settings.supabase_url or not settings.supabase_key:
-            raise ValueError("Supabase URL and key must be configured for OAuth")
-        
-        self.supabase = create_client(settings.supabase_url, settings.supabase_key)
+    @property
+    def supabase(self):
+        """Lazy initialization of Supabase client"""
+        if self._supabase is None:
+            if not settings.supabase_url or not settings.supabase_key:
+                raise ValueError("Supabase URL and key must be configured for OAuth")
+            self._supabase = create_client(settings.supabase_url, settings.supabase_key)
+        return self._supabase
     
     def generate_state(self, user_id: str) -> str:
         """Generate a secure state parameter for OAuth"""
@@ -113,6 +117,22 @@ oauth_handler = OAuthHandler()
 @router.get("/connect/{user_id}")
 async def connect_google_calendar(user_id: str):
     """Serve OAuth connection page with client-side Supabase auth"""
+    
+    # Check if Supabase is configured
+    try:
+        # This will trigger the lazy initialization and fail if not configured
+        _ = oauth_handler.supabase
+    except ValueError as e:
+        return HTMLResponse("""
+        <html>
+            <head><title>Service Configuration Error</title></head>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                <h1>⚙️ Service Not Configured</h1>
+                <p>OAuth service is not currently configured.</p>
+                <p>Please contact an administrator.</p>
+            </body>
+        </html>
+        """, status_code=503)
     
     # Validate user_id
     if not user_id or not user_id.isdigit():
@@ -303,6 +323,15 @@ async def connect_google_calendar(user_id: str):
 async def store_tokens(request: Request):
     """Store Google OAuth tokens received from client-side auth"""
     try:
+        # Check if Supabase is configured
+        try:
+            _ = oauth_handler.supabase
+        except ValueError:
+            return JSONResponse(
+                content={"error": "OAuth service not configured"}, 
+                status_code=503
+            )
+            
         body = await request.json()
         user_id = body.get('user_id')
         access_token = body.get('access_token') 
@@ -332,6 +361,22 @@ async def store_tokens(request: Request):
 @router.get("/auth/success")
 async def auth_success(request: Request):
     """Handle OAuth success callback - redirect to client-side handling"""
+    
+    # Check if Supabase is configured
+    try:
+        _ = oauth_handler.supabase
+    except ValueError:
+        return HTMLResponse("""
+        <html>
+            <head><title>Service Configuration Error</title></head>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                <h1>⚙️ Service Not Configured</h1>
+                <p>OAuth service is not currently configured.</p>
+                <p>Please contact an administrator.</p>
+            </body>
+        </html>
+        """, status_code=503)
+    
     query_params = dict(request.query_params)
     user_id = query_params.get('user_id')
     
