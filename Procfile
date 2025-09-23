@@ -1,0 +1,1 @@
+web: python -m events_agent.main

@@ -43,8 +43,10 @@ class Settings(BaseSettings):
     def base_url(self) -> str:
         """Get the base URL for OAuth redirects based on environment"""
         if self.environment == "production":
-            return "https://your-domain.com"  # Update this for production
+            # Replace with your Railway domain once deployed
+            return "https://your-railway-domain.railway.app"
         else:
+            # Always use localhost for browser access in development
             return f"http://localhost:{self.http_port}"
 
 

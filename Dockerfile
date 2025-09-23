@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
@@ -28,5 +29,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
-# Run the application
-CMD ["uvicorn", "src.events_agent.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Run the application (Railway will override this with Procfile or railway.json)
+CMD ["python", "-m", "events_agent.main"]

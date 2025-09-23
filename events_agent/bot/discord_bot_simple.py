@@ -46,6 +46,10 @@ def build_bot() -> DiscordClient:
         await interaction.response.defer(ephemeral=True)
         
         user_id = str(interaction.user.id)
+        # Debug logging to see what's being generated
+        logger.info("debug_settings", http_host=settings.http_host, http_port=settings.http_port, environment=settings.environment)
+        logger.info("debug_base_url", base_url=settings.base_url)
+        
         url = f"{settings.base_url}/connect/{user_id}"
         
         embed = discord.Embed(
@@ -55,6 +59,7 @@ def build_bot() -> DiscordClient:
         )
         embed.add_field(name="Connection Link", value=f"[Connect Now]({url})", inline=False)
         embed.add_field(name="Note", value="This will open in your browser and use Supabase OAuth for secure authentication.", inline=False)
+        embed.add_field(name="Debug Info", value=f"Generated URL: `{url}`", inline=False)
         
         await interaction.followup.send(embed=embed, ephemeral=True)
         logger.info("connect_link_sent", interaction_id=str(interaction.id), url=url)
