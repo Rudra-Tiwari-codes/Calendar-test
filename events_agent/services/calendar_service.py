@@ -115,17 +115,23 @@ class GoogleCalendarService:
             logger.info("creating_event", user_id=discord_user_id, title=title)
             
             # Build event body for Google Calendar with proper timezone handling
+            timezone_name = getattr(start_time.tzinfo, 'zone', str(start_time.tzinfo))
             event_body = {
                 "summary": title,
                 "start": {
                     "dateTime": start_time.isoformat(),
-                    "timeZone": str(start_time.tzinfo)
+                    "timeZone": timezone_name
                 },
                 "end": {
                     "dateTime": end_time.isoformat(),
-                    "timeZone": str(end_time.tzinfo)
+                    "timeZone": timezone_name
                 },
             }
+            
+            logger.info("event_api_request", 
+                       start_datetime=start_time.isoformat(),
+                       end_datetime=end_time.isoformat(),
+                       timezone=timezone_name)
             
             if description:
                 event_body["description"] = description

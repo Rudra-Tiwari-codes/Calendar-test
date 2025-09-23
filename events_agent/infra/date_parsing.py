@@ -18,10 +18,12 @@ def parse_natural_datetime(text: str, tz: str = "Australia/Melbourne") -> dateti
     - "in 2 hours" -> datetime object
     - "december 25th 10am" -> datetime object
     """
+    tzinfo = pytz.timezone(tz)
     settings = {
         "RETURN_AS_TIMEZONE_AWARE": True, 
         "PREFER_DATES_FROM": "future",
-        "RELATIVE_BASE": datetime.now(pytz.timezone(tz))
+        "RELATIVE_BASE": datetime.now(tzinfo),
+        "TO_TIMEZONE": tz
     }
     
     # Clean up the text
@@ -60,7 +62,8 @@ def parse_natural_range(text: str, tz: str = "Australia/Melbourne") -> Tuple[dat
     settings = {
         "RETURN_AS_TIMEZONE_AWARE": True, 
         "PREFER_DATES_FROM": "future",
-        "RELATIVE_BASE": datetime.now(tzinfo)
+        "RELATIVE_BASE": datetime.now(tzinfo),
+        "TO_TIMEZONE": tz
     }
     
     # Clean up the text like in parse_natural_datetime
