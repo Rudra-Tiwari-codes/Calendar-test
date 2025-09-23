@@ -138,6 +138,9 @@ def build_bot() -> DiscordClient:
                            when=when, 
                            start_dt=start_dt.isoformat(), 
                            end_dt=end_dt.isoformat(),
+                           start_tz=str(start_dt.tzinfo),
+                           end_tz=str(end_dt.tzinfo),
+                           configured_tz=tz,
                            user_id=str(interaction.user.id))
                 
             except Exception as e:
@@ -172,12 +175,13 @@ def build_bot() -> DiscordClient:
                 color=0x00ff00
             )
             
-            # Show time range
-            time_str = f"{start_dt.strftime('%B %d, %Y at %I:%M %p')} - {end_dt.strftime('%I:%M %p')}"
+            # Show time range with timezone
+            time_str = f"{start_dt.strftime('%B %d, %Y at %I:%M %p')} - {end_dt.strftime('%I:%M %p')} ({start_dt.tzinfo})"
             embed.add_field(name="📅 Date & Time", value=time_str, inline=False)
             
             # Add event ID for future reference
-            embed.add_field(name="🆔 Event ID", value=f"`{result.get('event_id', 'unknown')}`", inline=False)
+            event_id = result.get('event', {}).get('google_id', 'unknown')
+            embed.add_field(name="🆔 Event ID", value=f"`{event_id}`", inline=False)
             
             if location:
                 embed.add_field(name="📍 Location", value=location, inline=False)
@@ -187,7 +191,7 @@ def build_bot() -> DiscordClient:
                 embed.add_field(name="⏰ Reminder", value=f"{reminder_minutes} minutes before", inline=False)
                 
             # Add Google Calendar link if available
-            event_url = result.get("event_url")
+            event_url = result.get('event', {}).get('calendar_link')
             if event_url:
                 embed.add_field(name="🔗 View in Google Calendar", value=f"[Open Event]({event_url})", inline=False)
             else:

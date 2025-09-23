@@ -101,11 +101,17 @@ class GoogleCalendarService:
                     }
                 }
             
-            # Build event body for Google Calendar
+            # Build event body for Google Calendar with proper timezone handling
             event_body = {
                 "summary": title,
-                "start": {"dateTime": start_time.isoformat()},
-                "end": {"dateTime": end_time.isoformat()},
+                "start": {
+                    "dateTime": start_time.isoformat(),
+                    "timeZone": str(start_time.tzinfo)
+                },
+                "end": {
+                    "dateTime": end_time.isoformat(),
+                    "timeZone": str(end_time.tzinfo)
+                },
             }
             
             if description:

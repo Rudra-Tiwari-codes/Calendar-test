@@ -56,27 +56,54 @@ def parse_natural_range(text: str, tz: str = "Australia/Melbourne") -> Tuple[dat
     - "next monday 2pm-4pm" -> (start_datetime, end_datetime)
     - "tomorrow 3pm" -> (start_datetime, start_datetime + 1 hour)
     """
-    settings = {"RETURN_AS_TIMEZONE_AWARE": True, "PREFER_DATES_FROM": "future"}
+    tzinfo = pytz.timezone(tz)
+    settings = {
+        "RETURN_AS_TIMEZONE_AWARE": True, 
+        "PREFER_DATES_FROM": "future",
+        "RELATIVE_BASE": datetime.now(tzinfo)
+    }
+    
+    # Clean up the text like in parse_natural_datetime
+    text = text.strip().lower()
+    
+    # Handle common patterns
+    text = re.sub(r'\b(\d+)\s*hours?\b', r'\1 hours', text)
+    text = re.sub(r'\b(\d+)\s*days?\b', r'\1 days', text)
+    text = re.sub(r'\b(\d+)\s*weeks?\b', r'\1 weeks', text)
+    
+    # Handle "next" patterns
+    text = re.sub(r'\bnext\s+(\w+day)\b', r'\1', text)
+    text = re.sub(r'\bnext\s+(\w+day)\s+(\d+)\s*(am|pm)\b', r'\1 \2\3', text)
+    
     parsed = dateparser.parse(text, settings=settings)
     if not parsed:
-        raise ValueError("could_not_parse_time")
+        raise ValueError(f"Could not parse time: '{text}'")
+    
     if "to" in text or "-" in text:
-        # crude split
+        # Parse range
         if " to " in text:
             left, right = text.split(" to ", 1)
         else:
             left, right = text.split("-", 1)
-        start = dateparser.parse(left, settings=settings)
-        end = dateparser.parse(right, settings=settings)
+        
+        start = dateparser.parse(left.strip(), settings=settings)
+        end = dateparser.parse(right.strip(), settings=settings)
+        
+        if not start or not end:
+            raise ValueError(f"Could not parse time range: '{text}'")
+            
+        # If end time is on same day but earlier than start time, assume it's the next day
+        if end.date() == start.date() and end.time() < start.time():
+            end = end + timedelta(days=1)
     else:
-        # default 1h duration
+        # Single time - default 1h duration
         start = parsed
         end = parsed + timedelta(hours=1)
-    if not start or not end:
-        raise ValueError("could_not_parse_time")
-    tzinfo = pytz.timezone(tz)
+    
+    # Ensure timezone is correct
     start = start.astimezone(tzinfo)
     end = end.astimezone(tzinfo)
+    
     return start, end
 
 
