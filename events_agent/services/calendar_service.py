@@ -116,22 +116,29 @@ class GoogleCalendarService:
             
             # Build event body for Google Calendar with proper timezone handling
             timezone_name = getattr(start_time.tzinfo, 'zone', str(start_time.tzinfo))
+            
+            # Use RFC 3339 format without timezone offset in dateTime (let timeZone field handle it)
+            # This prevents Google Calendar from double-converting timezones
+            start_dt_str = start_time.strftime('%Y-%m-%dT%H:%M:%S')
+            end_dt_str = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+            
             event_body = {
                 "summary": title,
                 "start": {
-                    "dateTime": start_time.isoformat(),
+                    "dateTime": start_dt_str,
                     "timeZone": timezone_name
                 },
                 "end": {
-                    "dateTime": end_time.isoformat(),
+                    "dateTime": end_dt_str,
                     "timeZone": timezone_name
                 },
             }
             
             logger.info("event_api_request", 
-                       start_datetime=start_time.isoformat(),
-                       end_datetime=end_time.isoformat(),
-                       timezone=timezone_name)
+                       start_datetime=start_dt_str,
+                       end_datetime=end_dt_str,
+                       timezone=timezone_name,
+                       original_with_tz=start_time.isoformat())
             
             if description:
                 event_body["description"] = description
