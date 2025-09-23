@@ -7,6 +7,7 @@ from typing import Optional, Dict, Any
 
 import discord
 from discord import app_commands
+import pytz
 
 from ..infra.logging import get_logger
 from ..infra.settings import settings
@@ -249,7 +250,10 @@ def build_bot() -> DiscordClient:
                     if "T" in start_time:  # datetime format
                         try:
                             dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-                            time_str = dt.strftime("%b %d, %I:%M %p")
+                            # Convert to user's local timezone
+                            local_tz = pytz.timezone(settings.default_tz)
+                            dt_local = dt.astimezone(local_tz)
+                            time_str = dt_local.strftime("%b %d, %I:%M %p")
                         except:
                             time_str = start_time
                     else:  # date only format
@@ -362,7 +366,10 @@ def build_bot() -> DiscordClient:
                     if "T" in start_time:  # datetime format
                         try:
                             dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
-                            time_str = dt.strftime("%b %d, %I:%M %p")
+                            # Convert to user's local timezone
+                            local_tz = pytz.timezone(settings.default_tz)
+                            dt_local = dt.astimezone(local_tz)
+                            time_str = dt_local.strftime("%b %d, %I:%M %p")
                         except:
                             time_str = start_time
                     else:  # date only format
@@ -420,14 +427,21 @@ def build_bot() -> DiscordClient:
                 color=0x0099ff
             )
             
-            # Add time information
+            # Add time information with proper timezone conversion
             start_time = event.get("start", "")
             end_time = event.get("end", "")
             if "T" in start_time:
                 try:
+                    # Parse datetime strings from Google Calendar
                     start_dt = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
                     end_dt = datetime.fromisoformat(end_time.replace("Z", "+00:00"))
-                    time_str = f"{start_dt.strftime('%A, %B %d at %I:%M %p')} - {end_dt.strftime('%I:%M %p')}"
+                    
+                    # Convert to user's local timezone (default: Australia/Melbourne)
+                    local_tz = pytz.timezone(settings.default_tz)
+                    start_local = start_dt.astimezone(local_tz)
+                    end_local = end_dt.astimezone(local_tz)
+                    
+                    time_str = f"{start_local.strftime('%A, %B %d at %I:%M %p')} - {end_local.strftime('%I:%M %p')}"
                 except:
                     time_str = f"{start_time} - {end_time}"
             else:
