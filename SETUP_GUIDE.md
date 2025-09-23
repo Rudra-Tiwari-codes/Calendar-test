@@ -21,7 +21,8 @@ SUPABASE_KEY=[YOUR_SUPABASE_ANON_KEY]
 # Security (generate a key)
 FERNET_KEY=[run: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"]
 
-# Google OAuth (optional for now)
+# Google OAuth (configure in Supabase Auth dashboard)
+# These are optional - only needed if not using Supabase Auth providers
 GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 ```

@@ -14,41 +14,35 @@ from events_agent.infra.settings import settings
 
 
 async def test_google_calendar_api():
-    """Test Google Calendar API with your credentials."""
-    print("🔍 Testing Google Calendar API Integration")
+    """Test Google Calendar OAuth configuration via Supabase."""
+    print("🔍 Testing Google Calendar API Integration via Supabase")
     print("=" * 50)
     
-    # Check if credentials file exists
-    credentials_file = "client_secret.json"
-    if not os.path.exists(credentials_file):
-        print(f"❌ Google credentials file not found: {credentials_file}")
+    # Check if Supabase OAuth is configured
+    if not settings.supabase_url:
+        print("❌ Supabase URL not configured")
         return False
     
-    print(f"✅ Found credentials file: {credentials_file}")
+    print(f"✅ Supabase URL configured: {settings.supabase_url}")
     
-    # Read credentials
-    try:
-        with open(credentials_file, 'r') as f:
-            creds = json.load(f)
-        
-        print("✅ Credentials file is valid JSON")
-        print(f"   Client ID: {creds['web']['client_id']}")
-        print(f"   Project ID: {creds['web']['project_id']}")
-        
-    except Exception as e:
-        print(f"❌ Error reading credentials: {e}")
-        return False
+    # Check if Google OAuth is configured in environment (for Supabase Auth)
+    if not settings.google_client_id or not settings.google_client_secret:
+        print("⚠️ Google OAuth credentials not in environment")
+        print("   These should be configured in Supabase Auth → Providers → Google")
+        print("   Not in your .env file for Supabase OAuth")
+    else:
+        print("ℹ️ Google OAuth credentials found in environment")
+        print("   For Supabase OAuth, these should be configured in Supabase dashboard instead")
     
     # Test OAuth flow (simplified)
-    print("\n🔍 Testing OAuth Configuration...")
-    print(f"   Client ID: {settings.google_client_id}")
-    print(f"   Client Secret: {'*' * 20}")
+    print("\n🔍 Testing Supabase OAuth Configuration...")
     print(f"   Supabase URL: {settings.supabase_url}")
+    print("   OAuth handled by Supabase - no manual redirect URI needed")
     
-    if settings.google_client_id and settings.google_client_secret and settings.supabase_url:
-        print("✅ OAuth settings configured for Supabase")
+    if settings.supabase_url:
+        print("✅ Supabase OAuth configured")
     else:
-        print("❌ OAuth settings missing")
+        print("❌ Supabase OAuth settings missing")
         return False
     
     print("\n📋 To test Google Calendar integration:")

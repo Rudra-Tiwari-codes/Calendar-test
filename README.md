@@ -52,23 +52,10 @@ A comprehensive Discord bot that integrates with Google Calendar for seamless ev
    # Security
    FERNET_KEY=[GENERATE_USING_cryptography.fernet.Fernet.generate_key()]
    
-   # Google OAuth Configuration - Managed by Supabase
+   # OAuth Configuration (Optional - configure in Supabase dashboard instead)
+   # Only needed if not using Supabase Auth providers
    GOOGLE_CLIENT_ID=your_google_client_id
    GOOGLE_CLIENT_SECRET=your_google_client_secret
-   SUPABASE_AUTH_URL=https://[YOUR_PROJECT_ID].supabase.co/auth/v1/callback
-   ```
-   
-   # Security
-   FERNET_KEY=your_base64_32byte_encryption_key
-   
-   # Google OAuth Configuration
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-   OAUTH_REDIRECT_URI=http://localhost:8000/oauth/callback
-   
-   # Supabase Configuration
-   SUPABASE_URL=https://your_project.supabase.co
-   SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 3. **Initialize the database:**
@@ -104,7 +91,7 @@ The bot also exposes a REST API for programmatic access:
 - **`GET /healthz`** - Health check endpoint
 - **`GET /readyz`** - Readiness check (verifies database connectivity)
 - **`GET /metrics`** - Prometheus metrics for monitoring
-- **`GET /oauth/callback`** - OAuth callback for Google Calendar integration
+- **`GET /auth/success`** - OAuth success page for Supabase authentication
 
 ## Architecture
 
@@ -279,19 +266,25 @@ For support, please open an issue in the GitHub repository or contact the mainta
 
 ### Google Calendar API Setup
 
+**For Supabase OAuth (Recommended):**
+
+> 📋 **See [SUPABASE_OAUTH_SETUP.md](./SUPABASE_OAUTH_SETUP.md) for detailed Supabase OAuth setup instructions**
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select existing one
 3. Enable Google Calendar API
 4. Create OAuth 2.0 credentials (Web application)
-5. Add `http://localhost:8000/oauth/callback` to authorized redirect URIs
-6. Download credentials JSON file as `client_secret.json`
-7. Copy client ID and secret to `.env`
+5. Add `https://[YOUR_PROJECT_ID].supabase.co/auth/v1/callback` to authorized redirect URIs
+6. Copy the **Client ID** and **Client Secret**
+7. Go to your Supabase Dashboard → Authentication → Providers
+8. Enable Google provider and paste your Client ID and Client Secret there
+9. **Do NOT** download or use `client_secret.json` - Supabase manages the OAuth flow
 
 ### Supabase Setup
 
 1. Go to [Supabase](https://supabase.com/)
 2. Create a new project
-3. Go to Settings > Database
+3. Go to Settings → API to get your project URL and anon key
 4. Copy the connection string and update `DATABASE_URL`
 5. Copy the anon key to `SUPABASE_ANON_KEY`
 

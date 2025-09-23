@@ -17,8 +17,6 @@ services:
     depends_on:
       - db
       - redis
-    volumes:
-      - ./client_secret.json:/app/client_secret.json:ro
     restart: unless-stopped
 
   db:

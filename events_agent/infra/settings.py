@@ -20,12 +20,11 @@ class Settings(BaseSettings):
     # Security
     fernet_key: str | None = None
 
-    # Google OAuth - Managed by Supabase
+    # Google OAuth - Configure in Supabase Auth dashboard
     google_client_id: str | None = None
     google_client_secret: str | None = None
     
-    # OAuth Configuration
-    oauth_redirect_uri: str = "https://zqurkolbiilsuqudcyud.supabase.co/auth/v1/callback"
+    # OAuth Configuration - Supabase manages redirect URI
     oauth_state_secret: str = "uEK4I9iIlEQHOlMw0RTw-Pu9Ousrriqdi-AXYkwXsaw"
     google_oauth_scopes: str = "https://www.googleapis.com/auth/calendar,https://www.googleapis.com/auth/calendar.events"
 
