@@ -149,6 +149,57 @@ class GoogleCalendarService:
                 service.events().insert(calendarId="primary", body=event_body).execute
             )
             
+            # Store event in Supabase database
+            try:
+                # Get user ID from database first
+                user_response = self.supabase.table('users').select('id').eq('discord_id', discord_user_id).execute()
+                if not user_response.data:
+                    raise ValueError("User not found in database")
+                
+                user_id = user_response.data[0]['id']
+                
+                # Store event in database
+                attendees_json = json.dumps(attendees) if attendees else None
+                event_data = {
+                    'user_id': user_id,
+                    'discord_user_id': discord_user_id,
+                    'google_event_id': google_event["id"],
+                    'title': title,
+                    'description': description,
+                    'location': location,
+                    'start_time': start_time.isoformat(),
+                    'end_time': end_time.isoformat(),
+                    'attendees': attendees_json,
+                    'google_calendar_link': google_event.get("htmlLink"),
+                    'reminder_sent': False
+                }
+                
+                db_result = self.supabase.table('events').insert(event_data).execute()
+                
+                # Create reminder if specified
+                if reminder_minutes:
+                    reminder_time = start_time - timedelta(minutes=reminder_minutes)
+                    if reminder_time > datetime.now(timezone.utc):
+                        reminder_data = {
+                            'user_id': user_id,
+                            'event_id': google_event["id"],
+                            'remind_at': reminder_time.isoformat(),
+                            'sent': False,
+                            'retries': 0
+                        }
+                        self.supabase.table('reminders').insert(reminder_data).execute()
+                        logger.info("reminder_created", reminder_time=reminder_time.isoformat())
+                
+                logger.info("event_stored_in_database", 
+                           google_event_id=google_event["id"],
+                           db_event_id=db_result.data[0]['id'] if db_result.data else None,
+                           user_id=discord_user_id)
+                
+            except Exception as e:
+                logger.error("failed_to_store_event_in_database", error=str(e), google_event_id=google_event["id"])
+                # Don't fail the entire operation if database storage fails
+                # The event is still created in Google Calendar
+            
             logger.info("event_created_successfully", 
                        google_event_id=google_event["id"],
                        user_id=discord_user_id)
