@@ -43,7 +43,15 @@ class Settings(BaseSettings):
     @property
     def base_url(self) -> str:
         """Get the base URL for OAuth redirects based on environment"""
-        if self.environment == "production":
+        # Check if we're on Railway (Railway sets RAILWAY_ENVIRONMENT)
+        railway_env = os.getenv("RAILWAY_ENVIRONMENT")
+        is_production = (
+            self.environment == "production" or 
+            railway_env is not None or 
+            os.getenv("PORT") is not None  # Railway always sets PORT
+        )
+        
+        if is_production:
             # Your actual Railway domain
             return "https://web-production-75e4c.up.railway.app"
         else:
