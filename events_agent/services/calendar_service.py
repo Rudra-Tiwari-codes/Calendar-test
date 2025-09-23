@@ -84,22 +84,8 @@ class GoogleCalendarService:
             # Decrypt and validate token
             token = await self._get_valid_token(user)
             
-            # Check for duplicate events
-            duplicate = await self.event_repo.check_duplicate_event(
-                discord_user_id, title, start_time, end_time
-            )
-            if duplicate:
-                logger.warning("duplicate_event_detected", user_id=discord_user_id, title=title)
-                return {
-                    "success": False,
-                    "message": "A similar event already exists at this time. Please choose a different time or modify the event title.",
-                    "duplicate_event": {
-                        "id": duplicate.id,
-                        "title": duplicate.title,
-                        "start_time": duplicate.start_time.isoformat(),
-                        "end_time": duplicate.end_time.isoformat()
-                    }
-                }
+            # Skip duplicate check for now - could implement with Supabase later
+            logger.info("creating_event", user_id=discord_user_id, title=title)
             
             # Build event body for Google Calendar with proper timezone handling
             event_body = {
@@ -136,41 +122,19 @@ class GoogleCalendarService:
                 service.events().insert(calendarId="primary", body=event_body).execute
             )
             
-            # Store event in database
-            db_event = await self.event_repo.create_event(
-                user_id=user.id,
-                discord_user_id=discord_user_id,
-                google_event_id=google_event["id"],
-                title=title,
-                description=description,
-                location=location,
-                start_time=start_time,
-                end_time=end_time,
-                attendees=attendees,
-                google_calendar_link=google_event.get("htmlLink")
-            )
-            
-            # Create reminder if specified
-            if reminder_minutes:
-                reminder_time = start_time - timedelta(minutes=reminder_minutes)
-                if reminder_time > datetime.now(timezone.utc):
-                    await self.reminder_repo.create_reminder(
-                        user_id=user.id,
-                        event_id=google_event["id"],
-                        channel_id=None,  # Will be set when sending reminder
-                        remind_at=reminder_time
-                    )
-            
+            # Log successful creation (database storage could be added later)
             logger.info("event_created_successfully", 
-                       event_id=db_event.id, 
                        google_event_id=google_event["id"],
-                       user_id=discord_user_id)
+                       user_id=discord_user_id,
+                       start_time=start_time.isoformat(),
+                       end_time=end_time.isoformat())
             
             return {
                 "success": True,
                 "message": f"✅ Event '{title}' created successfully!",
+                "event_id": google_event["id"],  # Direct field for Discord bot
+                "event_url": google_event.get("htmlLink"),  # Direct field for Discord bot
                 "event": {
-                    "id": db_event.id,
                     "google_id": google_event["id"],
                     "title": title,
                     "start_time": start_time.isoformat(),

@@ -180,7 +180,7 @@ def build_bot() -> DiscordClient:
             embed.add_field(name="📅 Date & Time", value=time_str, inline=False)
             
             # Add event ID for future reference
-            event_id = result.get('event', {}).get('google_id', 'unknown')
+            event_id = result.get('event_id', 'unknown')
             embed.add_field(name="🆔 Event ID", value=f"`{event_id}`", inline=False)
             
             if location:
@@ -191,7 +191,7 @@ def build_bot() -> DiscordClient:
                 embed.add_field(name="⏰ Reminder", value=f"{reminder_minutes} minutes before", inline=False)
                 
             # Add Google Calendar link if available
-            event_url = result.get('event', {}).get('calendar_link')
+            event_url = result.get('event_url')
             if event_url:
                 embed.add_field(name="🔗 View in Google Calendar", value=f"[Open Event]({event_url})", inline=False)
             else:

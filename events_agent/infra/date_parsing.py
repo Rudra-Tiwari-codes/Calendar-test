@@ -79,12 +79,21 @@ def parse_natural_range(text: str, tz: str = "Australia/Melbourne") -> Tuple[dat
     if not parsed:
         raise ValueError(f"Could not parse time: '{text}'")
     
-    if "to" in text or "-" in text:
-        # Parse range
-        if " to " in text:
-            left, right = text.split(" to ", 1)
-        else:
-            left, right = text.split("-", 1)
+    if " to " in text:
+        # Parse range with "to"
+        left, right = text.split(" to ", 1)
+        start = dateparser.parse(left.strip(), settings=settings)
+        end = dateparser.parse(right.strip(), settings=settings)
+        
+        if not start or not end:
+            raise ValueError(f"Could not parse time range: '{text}'")
+            
+        # If end time is on same day but earlier than start time, assume it's the next day
+        if end.date() == start.date() and end.time() < start.time():
+            end = end + timedelta(days=1)
+    elif "-" in text:
+        # Parse range with "-"
+        left, right = text.split("-", 1)
         
         start = dateparser.parse(left.strip(), settings=settings)
         end = dateparser.parse(right.strip(), settings=settings)
