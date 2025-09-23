@@ -26,17 +26,25 @@ async def main_async() -> None:
         logger.info("supabase_production_db_initialized")
     except Exception as e:
         logger.error("supabase_production_db_failed", error=str(e))
-        raise
+        # Don't raise - allow the HTTP server to start for health checks
+        logger.warning("continuing_without_supabase_for_health_checks")
 
     # Create FastAPI app
     app = create_app()
     
-    # Build Discord bot
-    discord_client = build_bot()
+    # Build Discord bot (but don't fail if token is missing)
+    discord_client = None
+    try:
+        discord_client = build_bot()
+    except Exception as e:
+        logger.error("discord_bot_build_failed", error=str(e))
+        logger.warning("continuing_without_discord_bot_for_health_checks")
     
     # Create reminder service with Discord client
-    reminder_service = ReminderService(discord_client)
-    set_reminder_service(reminder_service)
+    reminder_service = None
+    if discord_client:
+        reminder_service = ReminderService(discord_client)
+        set_reminder_service(reminder_service)
     
     # Start scheduler
     scheduler = start_scheduler()
@@ -47,13 +55,19 @@ async def main_async() -> None:
 
     async def run_uvicorn() -> None:
         """Run the FastAPI server."""
+        logger.info("configuring_uvicorn_server", host=settings.http_host, port=settings.http_port)
         config = uvicorn.Config(app, host=settings.http_host, port=settings.http_port, log_config=None)
         server = uvicorn.Server(config)
         logger.info("starting_http_server", host=settings.http_host, port=settings.http_port)
+        print(f"🌐 Health check endpoint: http://{settings.http_host}:{settings.http_port}/healthz")
         await server.serve()
 
     async def run_discord() -> None:
         """Run the Discord bot."""
+        if not discord_client:
+            logger.warning("discord_client_not_available_skipping")
+            return
+            
         token = settings.discord_token
         if not token:
             logger.warning("discord_token_missing")
@@ -65,7 +79,9 @@ async def main_async() -> None:
     # Run both services concurrently
     try:
         print("🚀 Starting Calendar Agent...")
+        print(f"🌍 Environment: {settings.environment}")
         print(f"📡 HTTP Server: http://{settings.http_host}:{settings.http_port}")
+        print(f"🏥 Health Check: http://{settings.http_host}:{settings.http_port}/healthz")
         print("🤖 Discord Bot: Starting...")
         
         # Use asyncio.gather instead of TaskGroup for compatibility

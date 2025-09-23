@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -8,7 +9,7 @@ class Settings(BaseSettings):
 
     # Core service
     http_host: str = "0.0.0.0"
-    http_port: int = 8000
+    http_port: int = int(os.getenv("PORT", "8000"))  # Railway will override this with PORT env var
     default_tz: str = "Australia/Melbourne"
     
     # Environment
