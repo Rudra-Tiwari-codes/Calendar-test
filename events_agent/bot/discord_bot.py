@@ -7,6 +7,7 @@ from typing import Optional, Dict, Any
 
 import discord
 from discord import app_commands
+import pytz
 
 from ..infra.logging import get_logger
 from ..infra.settings import settings
@@ -202,8 +203,22 @@ def build_bot() -> DiscordClient:
                 )
                 
                 for i, event in enumerate(events, 1):
-                    start_time = datetime.fromisoformat(event["start_time"])
-                    end_time = datetime.fromisoformat(event["end_time"])
+                    # Parse and convert to local timezone for display
+                    if "T" in event["start_time"]:  # datetime format
+                        try:
+                            start_dt = datetime.fromisoformat(event["start_time"].replace("Z", "+00:00"))
+                            end_dt = datetime.fromisoformat(event["end_time"].replace("Z", "+00:00"))
+                            local_tz = pytz.timezone(settings.default_tz)
+                            start_local = start_dt.astimezone(local_tz)
+                            end_local = end_dt.astimezone(local_tz)
+                            start_time = start_local
+                            end_time = end_local
+                        except Exception:
+                            start_time = datetime.fromisoformat(event["start_time"])
+                            end_time = datetime.fromisoformat(event["end_time"])
+                    else:
+                        start_time = datetime.fromisoformat(event["start_time"])
+                        end_time = datetime.fromisoformat(event["end_time"])
                     
                     event_text = f"**{event['title']}**\n"
                     event_text += f"🕐 {start_time.strftime('%A, %B %d at %I:%M %p')} - {end_time.strftime('%I:%M %p')}\n"
@@ -394,9 +409,27 @@ class EventConfirmationView(discord.ui.View):
                 
                 event = result["event"]
                 embed.add_field(name="📝 Title", value=event["title"], inline=False)
+                # Parse and convert to local timezone for display
+                if "T" in event['start_time']:  # datetime format
+                    try:
+                        start_dt = datetime.fromisoformat(event['start_time'].replace("Z", "+00:00"))
+                        end_dt = datetime.fromisoformat(event['end_time'].replace("Z", "+00:00"))
+                        local_tz = pytz.timezone(settings.default_tz)
+                        start_local = start_dt.astimezone(local_tz)
+                        end_local = end_dt.astimezone(local_tz)
+                        time_str = f"{start_local.strftime('%A, %B %d at %I:%M %p')} - {end_local.strftime('%I:%M %p')}"
+                    except Exception:
+                        start_time = datetime.fromisoformat(event['start_time'])
+                        end_time = datetime.fromisoformat(event['end_time'])
+                        time_str = f"{start_time.strftime('%A, %B %d at %I:%M %p')} - {end_time.strftime('%I:%M %p')}"
+                else:
+                    start_time = datetime.fromisoformat(event['start_time'])
+                    end_time = datetime.fromisoformat(event['end_time'])
+                    time_str = f"{start_time.strftime('%A, %B %d at %I:%M %p')} - {end_time.strftime('%I:%M %p')}"
+                
                 embed.add_field(
                     name="🕐 Time", 
-                    value=f"{datetime.fromisoformat(event['start_time']).strftime('%A, %B %d at %I:%M %p')} - {datetime.fromisoformat(event['end_time']).strftime('%I:%M %p')}", 
+                    value=time_str, 
                     inline=False
                 )
                 
