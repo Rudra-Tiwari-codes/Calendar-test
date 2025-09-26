@@ -35,10 +35,9 @@ class OAuthHandler:
     
     def build_supabase_oauth_url(self, user_id: str) -> str:
         """Build Supabase OAuth URL using pure Supabase client"""
-        state = self.generate_state(user_id)
-        
+        # Don't use custom state - let Supabase handle state internally
         # Dynamic redirect URL based on environment
-        redirect_url = f"{settings.base_url}/auth/success?state={state}&user_id={user_id}"
+        redirect_url = f"{settings.base_url}/auth/success?user_id={user_id}"
         
         # Pure Supabase OAuth - let Supabase handle everything
         try:
@@ -319,6 +318,40 @@ async def connect_google_calendar(user_id: str):
     """)
 
 
+@router.get("/auth/debug")
+async def debug_oauth(request: Request):
+    """Debug OAuth configuration"""
+    query_params = dict(request.query_params)
+    
+    return HTMLResponse(f"""
+    <html>
+        <head><title>OAuth Debug Info</title></head>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h1>🔍 OAuth Debug Information</h1>
+            
+            <h2>Environment:</h2>
+            <ul>
+                <li><strong>Base URL:</strong> {settings.base_url}</li>
+                <li><strong>Supabase URL:</strong> {settings.supabase_url}</li>
+                <li><strong>Has OAuth Secret:</strong> {bool(settings.oauth_state_secret)}</li>
+            </ul>
+            
+            <h2>Query Parameters:</h2>
+            <pre style="background: #f5f5f5; padding: 15px; border-radius: 5px;">
+{json.dumps(query_params, indent=2)}
+            </pre>
+            
+            <h2>Expected Redirect URLs:</h2>
+            <ul>
+                <li><code>{settings.base_url}/auth/success</code></li>
+                <li><code>{settings.base_url}/auth/success?user_id=YOUR_USER_ID</code></li>
+            </ul>
+            
+            <p><a href="/connect/123456789">Test Connect Page</a></p>
+        </body>
+    </html>
+    """)
+
 @router.post("/auth/store-tokens")
 async def store_tokens(request: Request):
     """Store Google OAuth tokens received from client-side auth"""
@@ -379,6 +412,31 @@ async def auth_success(request: Request):
     
     query_params = dict(request.query_params)
     user_id = query_params.get('user_id')
+    
+    # Log all query parameters for debugging
+    logger.info("oauth_success_callback", query_params=query_params, user_id=user_id)
+    
+    # Check for OAuth error parameters
+    error = query_params.get('error')
+    error_description = query_params.get('error_description')
+    
+    if error:
+        logger.error("oauth_callback_error", error=error, description=error_description)
+        return HTMLResponse(f"""
+        <html>
+            <head><title>OAuth Error</title></head>
+            <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+                <h1>❌ OAuth Error</h1>
+                <p><strong>Error:</strong> {error}</p>
+                <p><strong>Description:</strong> {error_description or 'No description provided'}</p>
+                <div style="background: #f8f9fa; padding: 15px; margin: 20px 0; border-radius: 5px; font-family: monospace; font-size: 12px;">
+                    <strong>Query Parameters:</strong><br>
+                    {dict(query_params)}
+                </div>
+                <p>Please try connecting again from Discord.</p>
+            </body>
+        </html>
+        """, status_code=400)
     
     if not user_id:
         return HTMLResponse("""
