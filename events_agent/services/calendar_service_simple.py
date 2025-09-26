@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from typing import Any, Dict, Optional
 
+import pytz
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -70,18 +71,30 @@ class GoogleCalendarService:
             token = await self._get_valid_token(user_data)
             calendar_client = self._build_client(token)
             
-            # Create event body
+            # Create event body with proper timezone handling
+            # Convert to user's timezone first, then send as naive datetime
+            user_tz = user_data.get("tz", "Australia/Melbourne")
+            if isinstance(user_tz, str):
+                user_timezone = pytz.timezone(user_tz)
+            else:
+                user_timezone = pytz.timezone("Australia/Melbourne")
+            
+            # Ensure datetime is in the correct timezone
+            start_local = start_time.astimezone(user_timezone)
+            end_local = end_time.astimezone(user_timezone)
+            
+            # Send naive datetime (without timezone info) to avoid double conversion
             event_body = {
                 "summary": title,
                 "description": description,
                 "location": location,
                 "start": {
-                    "dateTime": start_time.isoformat(),
-                    "timeZone": user_data.get("tz", "Australia/Melbourne"),
+                    "dateTime": start_local.replace(tzinfo=None).isoformat(),
+                    "timeZone": user_tz,
                 },
                 "end": {
-                    "dateTime": end_time.isoformat(),
-                    "timeZone": user_data.get("tz", "Australia/Melbourne"),
+                    "dateTime": end_local.replace(tzinfo=None).isoformat(),
+                    "timeZone": user_tz,
                 },
             }
             
