@@ -116,6 +116,45 @@ def parse_natural_range(text: str, tz: str = "Australia/Melbourne") -> Tuple[dat
     start = start.astimezone(tzinfo)
     end = end.astimezone(tzinfo)
     
+    # Handle past times - if the parsed time is in the past and it's a specific time/date,
+    # move it to the next occurrence (next day, week, etc.)
+    now = datetime.now(tzinfo)
+    if start <= now:
+        # Check if this looks like a specific date (contains month name or day)
+        text_lower = text.lower()
+        has_specific_date = any(month in text_lower for month in [
+            'january', 'february', 'march', 'april', 'may', 'june',
+            'july', 'august', 'september', 'october', 'november', 'december',
+            'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+            'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+        ])
+        
+        has_specific_day = any(day in text_lower for day in [
+            'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+            'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'
+        ])
+        
+        has_today_tomorrow = any(word in text_lower for word in ['today', 'tomorrow'])
+        
+        # If it has a specific date/day and is in the past, move to next occurrence
+        if has_specific_date or has_specific_day or has_today_tomorrow:
+            if has_today_tomorrow and 'today' in text_lower:
+                # For "today" with past time, move to tomorrow
+                start = start + timedelta(days=1)
+                end = end + timedelta(days=1)
+            elif has_specific_date and not has_specific_day:
+                # Month + date, move to next year if needed
+                if start.year == now.year:
+                    start = start.replace(year=start.year + 1)
+                    end = end.replace(year=end.year + 1)
+            elif has_specific_day:
+                # Specific day of week, move to next week
+                days_ahead = (start.weekday() - now.weekday() + 7) % 7
+                if days_ahead == 0:  # Same day
+                    days_ahead = 7  # Move to next week
+                start = start + timedelta(days=days_ahead)
+                end = end + timedelta(days=days_ahead)
+    
     return start, end
 
 
