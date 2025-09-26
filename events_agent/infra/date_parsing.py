@@ -155,6 +155,21 @@ def parse_natural_range(text: str, tz: str = "Australia/Melbourne") -> Tuple[dat
                 start = start + timedelta(days=days_ahead)
                 end = end + timedelta(days=days_ahead)
     
+    # MANUAL TIMEZONE FIX: Subtract 10 hours for manually provided dates (not "today")
+    # This compensates for timezone storage issues with Google Calendar
+    text_lower = text.lower()
+    has_manual_date = any(month in text_lower for month in [
+        'january', 'february', 'march', 'april', 'may', 'june',
+        'july', 'august', 'september', 'october', 'november', 'december',
+        'jan', 'feb', 'mar', 'apr', 'may', 'jun',
+        'jul', 'aug', 'sep', 'oct', 'nov', 'dec'
+    ])
+    
+    # Apply 10-hour offset for manual dates (but NOT for "today" or "tomorrow")
+    if has_manual_date and 'today' not in text_lower:
+        start = start - timedelta(hours=10)
+        end = end - timedelta(hours=10)
+    
     return start, end
 
 
