@@ -50,11 +50,11 @@ uv run python -m events_agent.main
 ## Usage
 
 Use Discord slash commands:
-- `/ping` — Check bot status
-- `/connect` — Link Google Calendar
-- `/addevent` — Add event
-- `/myevents` — List events
-- `/set-tz` — Set timezone
+- /ping — Check bot status
+- /connect — Link Google Calendar
+- /addevent — Add event
+- /myevents — List events
+- /set-tz — Set timezone
 
 ## License
 

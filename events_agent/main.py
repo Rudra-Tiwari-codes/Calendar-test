@@ -58,9 +58,9 @@ async def main_async() -> None:
         logger.info("configuring_uvicorn_server", host=settings.http_host, port=settings.http_port)
         config = uvicorn.Config(app, host=settings.http_host, port=settings.http_port, log_config=None)
         server = uvicorn.Server(config)
-        logger.info("starting_http_server", host=settings.http_host, port=settings.http_port)
-        print(f"🌐 Health check endpoint: http://{settings.http_host}:{settings.http_port}/healthz")
-        await server.serve()
+            logger.info("starting_http_server", host=settings.http_host, port=settings.http_port)
+            print(f"Health check endpoint: http://{settings.http_host}:{settings.http_port}/healthz")
+            await server.serve()
 
     async def run_discord() -> None:
         """Run the Discord bot."""
@@ -78,11 +78,11 @@ async def main_async() -> None:
 
     # Run both services concurrently
     try:
-        print("🚀 Starting Calendar Agent...")
-        print(f"🌍 Environment: {settings.environment}")
-        print(f"📡 HTTP Server: http://{settings.http_host}:{settings.http_port}")
-        print(f"🏥 Health Check: http://{settings.http_host}:{settings.http_port}/healthz")
-        print("🤖 Discord Bot: Starting...")
+    print("Starting Calendar Agent...")
+    print(f"Environment: {settings.environment}")
+    print(f"HTTP Server: http://{settings.http_host}:{settings.http_port}")
+    print(f"Health Check: http://{settings.http_host}:{settings.http_port}/healthz")
+    print("Discord Bot: Starting...")
         
         # Use asyncio.gather instead of TaskGroup for compatibility
         await asyncio.gather(
@@ -92,7 +92,7 @@ async def main_async() -> None:
         )
     except Exception as e:
         logger.error("service_error", error=str(e))
-        print(f"❌ Error: {e}")
+    print(f"Error: {e}")
         raise
     finally:
         logger.info("shutting_down")
@@ -104,9 +104,9 @@ def main() -> None:
     try:
         asyncio.run(main_async())
     except KeyboardInterrupt:
-        print("\nShutting down Calendar Agent...")
+    print("\nShutting down Calendar Agent...")
     except Exception as e:
-        print(f"Error starting Calendar Agent: {e}")
+    print(f"Error starting Calendar Agent: {e}")
         raise
 
 
