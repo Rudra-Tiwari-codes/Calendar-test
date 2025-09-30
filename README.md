@@ -1,15 +1,26 @@
-src/events_agent/
-├── adapters/          # External service integrations (Google Calendar)
-├── app/              # FastAPI application and OAuth handling
-├── bot/              # Discord bot implementation
-├── domain/           # Core business models and entities
-├── infra/            # Infrastructure concerns (DB, logging, settings)
-├── services/         # Business logic services
-└── main.py           # Application entry point
 
 # Calendar Agent
 
-Discord bot for Google Calendar event management. Built with FastAPI and async Python.
+A professional Discord bot for Google Calendar event management, built with FastAPI and asynchronous Python.
+
+## Features
+- Manage Google Calendar events via Discord
+- OAuth integration for secure authentication
+- Timezone support
+- Supabase PostgreSQL backend
+
+## Project Structure
+
+```
+events_agent/
+	adapters/    # Integrations (Google Calendar)
+	app/         # FastAPI app & OAuth
+	bot/         # Discord bot
+	domain/      # Business models
+	infra/       # Infrastructure (DB, logging)
+	services/    # Business logic
+	main.py      # Entry point
+```
 
 ## Setup
 
@@ -19,15 +30,15 @@ Discord bot for Google Calendar event management. Built with FastAPI and async P
 - Google Cloud Project (Calendar API enabled)
 - Supabase PostgreSQL database
 
-**Install:**
-```bash
+**Installation:**
+```powershell
 git clone https://github.com/Rudra-Tiwari-codes/Calendar-Agent.git
 cd Calendar-Agent/events-agent
 uv sync
 ```
 
-**Environment:**
-Create a `.env` file:
+**Environment Variables:**
+Create a `.env` file with:
 ```
 DISCORD_TOKEN=your_token
 DATABASE_URL=your_db_url
@@ -37,26 +48,25 @@ DEFAULT_TZ=Australia/Melbourne
 FERNET_KEY=your_fernet_key
 ```
 
-**Migrate DB:**
-```bash
+**Database Migration:**
+```powershell
 uv run alembic upgrade head
 ```
 
-**Run:**
-```bash
+**Run the Bot:**
+```powershell
 uv run python -m events_agent.main
 ```
 
 ## Usage
 
 Use Discord slash commands:
-- /ping — Check bot status
-- /connect — Link Google Calendar
-- /addevent — Add event
-- /myevents — List events
-- /set-tz — Set timezone
+- `/ping` — Check bot status
+- `/connect` — Link Google Calendar
+- `/addevent` — Add event
+- `/myevents` — List events
+- `/set-tz` — Set timezone
 
 ## License
-
 MIT
 
