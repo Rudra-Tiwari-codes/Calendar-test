@@ -67,6 +67,6 @@ Use Discord slash commands:
 - `/myevents` — List events
 - `/set-tz` — Set timezone
 
-## License
-MIT
+Full Video Walkthrough:
 
+Watch the full demo on YouTube: [https://youtu.be/p5IEfjwj8Gk](https://youtu.be/WL98aE5H1Xo)
